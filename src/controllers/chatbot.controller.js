@@ -16,6 +16,7 @@ const chatbotHit = asyncHandler(async (req, res) => {
 
     let prompt;
     let requestBody = [];
+    let response;
 
     if (resumeFile) {
         const resumeBuffer = fs.readFileSync(resumeFile.path);
@@ -59,6 +60,8 @@ const chatbotHit = asyncHandler(async (req, res) => {
                 ],
             },
         ];
+        const result = await model.generateContent({ contents: requestBody });
+        response = result.response;
     } else {
         prompt = `
         You are an AI-powered educational assistant for an EdTech platform. Your purpose is to assist students with:
@@ -86,20 +89,14 @@ const chatbotHit = asyncHandler(async (req, res) => {
         `;
 
         requestBody = [{ role: "user", parts: [{ text: prompt }] }];
+        const result = await model.generateContent({ contents: requestBody });
+        response = result.response.text().trim();
     }
-
-    // 🔥 Send request to Gemini AI
-    const result = await model.generateContent({ contents: requestBody });
-    let chatbotResponse = result.response.text().trim();
 
     return res
         .status(200)
         .json(
-            new ApiResponse(
-                200,
-                chatbotResponse,
-                "Chatbot response fetch successful"
-            )
+            new ApiResponse(200, response, "Chatbot response fetch successful")
         );
 });
 
