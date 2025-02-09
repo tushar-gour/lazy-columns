@@ -104,8 +104,6 @@ const getVideoSummary = asyncHandler(async (req, res) => {
     const summary = await analyzeVideo(videoUrl, userQuery);
     const questions = await fetchQuestions(summary);
 
-    console.log(questions);
-
     return res.status(200).json(
         new ApiResponse(
             200,
