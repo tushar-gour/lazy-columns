@@ -1,8 +1,10 @@
 import { Router } from "express";
+import multer from "multer";
 import chatbotHit from "../controllers/chatbot.controller.js";
 
-const chatbotRouter = Router();
+const upload = multer({ dest: "uploads/" }); // Store files in 'uploads/' folder
 
-chatbotRouter.route("/").post(chatbotHit);
+const chatbotRouter = Router();
+chatbotRouter.route("/").post(upload.single("resumeFile"), chatbotHit); // Handle single file upload
 
 export default chatbotRouter;
