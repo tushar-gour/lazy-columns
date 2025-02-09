@@ -11,18 +11,16 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const chatbotHit = asyncHandler(async (req, res) => {
-    const { userQuery = "How can you help me?" } = req.body; // Extract user query
-    const resumeFile = req.file; // Extract resume file
+    const { userQuery = "How can you help me?" } = req.body;
+    const resumeFile = req.file;
 
     let prompt;
     let requestBody = [];
 
     if (resumeFile) {
-        // ✅ Read file and convert to Base64
         const resumeBuffer = fs.readFileSync(resumeFile.path);
         const base64Resume = resumeBuffer.toString("base64");
 
-        // ✅ Create structured resume analysis prompt
         prompt = `
             Analyze the given resume and provide a structured evaluation in JSON format. Assess the following parameters and provide percentage scores:
 
@@ -32,7 +30,7 @@ const chatbotHit = asyncHandler(async (req, res) => {
             - **ATS Compatibility**: Determine how well the resume adheres to Applicant Tracking System (ATS) requirements.
             
             Additionally, provide improvement suggestions for enhancing the resume. 
-            Ensure the output follows this **JSON structure**:
+            Ensure the output follows this **JSON structure** (return only valid JSON, no extra text):
             {
                 "skills": "80%",
                 "experience": "80%",
@@ -44,8 +42,7 @@ const chatbotHit = asyncHandler(async (req, res) => {
                 ]
             }
 
-            Adjust scores and suggestions based on the resume's content.
-            ⚠️ Important: Return the JSON **without markdown formatting** (like \`\`\`json ... \`\`\`).
+            ⚠️ **Important**: Only return valid JSON, no explanations or additional text.
         `;
 
         requestBody = [
@@ -63,7 +60,6 @@ const chatbotHit = asyncHandler(async (req, res) => {
             },
         ];
     } else {
-        // ✅ Default educational AI assistant prompt
         prompt = `
         You are an AI-powered educational assistant for an EdTech platform. Your tasks include:
 
@@ -85,16 +81,23 @@ const chatbotHit = asyncHandler(async (req, res) => {
 
     // 🔥 Send request to Gemini AI
     const result = await model.generateContent({ contents: requestBody });
-    let chatbotResponse = result.response.text();
+    let chatbotResponse = result.response.text().trim();
 
-    // ✅ Remove Markdown and ensure valid JSON
-    chatbotResponse = chatbotResponse.replace(/```json|```/g, "").trim();
+    // ✅ Extract JSON from mixed responses (if necessary)
+    const jsonMatch = chatbotResponse.match(/\{[\s\S]*\}/); // Find JSON-like content
+    if (jsonMatch) {
+        chatbotResponse = jsonMatch[0];
+    }
 
+    // ✅ Attempt JSON parsing
     try {
         chatbotResponse = JSON.parse(chatbotResponse);
     } catch (error) {
         console.error("❌ Invalid JSON response from Gemini:", error);
-        chatbotResponse = { error: "Failed to parse response as JSON." };
+        chatbotResponse = {
+            error: "Gemini returned an unstructured response. Please try again.",
+            rawResponse: chatbotResponse, // Show raw response for debugging
+        };
     }
 
     return res
