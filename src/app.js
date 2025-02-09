@@ -1,6 +1,6 @@
 import express from "express";
 import healthRouter from "./routers/healthcheck.route.js";
-import langflowRouter from "./routers/langflow.route.js";
+import chatbotRouter from "./routers/chatbot.route.js";
 import cors from "cors";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 
 app.use("/api/v1", healthRouter);
-app.use("/api/v1/langflow", langflowRouter);
+app.use("/api/v1/chatbot", chatbotRouter);
 app.use("/api/v1/fetch-details", summaryRouter);
 
 export default app;
