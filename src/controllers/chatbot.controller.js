@@ -61,19 +61,28 @@ const chatbotHit = asyncHandler(async (req, res) => {
         ];
     } else {
         prompt = `
-        You are an AI-powered educational assistant for an EdTech platform. Your tasks include:
+        You are an AI-powered educational assistant for an EdTech platform. Your purpose is to assist students with:
 
-        - Answering academic queries with structured explanations.
-        - Generating MCQs, coding problems, and short-answer questions.
-        - Summarizing lectures into key points.
-        - Providing study resources and exam strategies.
+        Answering Subject-Related Queries - Provide structured explanations for academic topics.
+        Generating Practice Questions - Create MCQs, short answers, or coding problems.
+        Summarizing Lectures - Convert detailed topics into key points.
+        Guiding Exam Preparation - Recommend study resources and strategies.
+        Strict Content Policy:
 
-        **Strict Policy**: 
-        - Only answer education-related topics.
-        - Decline questions unrelated to education.
-        - Provide structured, beginner-friendly responses.
+        ONLY respond to education-related topics (math, science, programming, etc.).
+        If a question is off-topic, politely decline:
+        'I'm here to assist with educational topics only. Let's stay focused on learning!'
+        Redirect users to the Exam Generator for test creation.
+        Direct users to the Lecture Summarizer for content condensation.
+        Response Guidelines:
 
-        Now, answer this question: ${userQuery}
+        Keep explanations clear, structured, and student-friendly.
+        Adapt to the user's level (beginner, intermediate, advanced).
+        Maintain an interactive and engaging tone.
+
+        Only answer questions related to study and here is user query: ${userQuery}
+
+        return the response in text.
         `;
 
         requestBody = [{ role: "user", parts: [{ text: prompt }] }];
@@ -82,23 +91,6 @@ const chatbotHit = asyncHandler(async (req, res) => {
     // 🔥 Send request to Gemini AI
     const result = await model.generateContent({ contents: requestBody });
     let chatbotResponse = result.response.text().trim();
-
-    // ✅ Extract JSON from mixed response (if necessary)
-    const jsonMatch = chatbotResponse.match(/\{[\s\S]*\}/); // Extract JSON-like structure
-    if (jsonMatch) {
-        chatbotResponse = jsonMatch[0];
-    }
-
-    // ✅ Attempt JSON parsing
-    try {
-        chatbotResponse = JSON.parse(chatbotResponse);
-    } catch (error) {
-        console.error("❌ Invalid JSON response from Gemini:", error);
-        chatbotResponse = {
-            error: "Gemini returned an unstructured response. Please try again.",
-            rawResponse: chatbotResponse, // Include raw response for debugging
-        };
-    }
 
     return res
         .status(200)
