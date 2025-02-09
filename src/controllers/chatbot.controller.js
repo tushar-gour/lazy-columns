@@ -34,7 +34,7 @@ const chatbotHit = asyncHandler(async (req, res) => {
     `;
 
     const result = await model.generateContent(prompt);
-    let chatbotResponse = result.text();
+    let chatbotResponse = result.response.text();
 
     chatbotResponse = chatbotResponse
         .replace(/[*_]/g, "")
