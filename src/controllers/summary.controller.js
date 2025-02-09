@@ -1,83 +1,71 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { ApiError } from "../utils/ApiError.js";
 import dotenv from "dotenv";
-import fs from "fs";
-import path from "path";
+import { ApiError } from "../utils/ApiError";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import multer from "multer";
-
 dotenv.config();
 
+// ✅ Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-const upload = multer({ dest: "uploads/" });
 
-const getVideoSummary = asyncHandler(async (req, res, next) => {
-    const localFilePath = req.file?.path;
-
-    if (!localFilePath) {
-        return next(
-            new ApiError(400, "No file uploaded", "Please upload a video file.")
-        );
-    }
-
+async function analyzeVideo(videoUrl, userQuery) {
     try {
-        console.log("Processing video...");
-        const userQuery = req.body.query || "";
+        console.log("Processing video:", videoUrl);
 
-        const analysisPrompt = `
-            Extract detailed insights from the uploaded video, structuring the summary for student notes.
-            The summary should include:
+        // Ensure correct model initialization
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-            1. *Key Topics Covered*
-            2. *Important Definitions & Terminologies*
-            3. *Step-by-Step Explanation of Concepts*
-            4. *Real-World Applications & Examples*
-            5. *Critical Insights & Takeaways*
-            6. *Additional Supporting Information from Web Research*
+        const prompt = `
+      Extract detailed insights from the YouTube video at the following URL: ${videoUrl}.
+      Structure the summary for student notes with these key points:
 
-            Ensure the summary is detailed, well-structured, and easy to understand, making it useful for study purposes.
+      1. Key Topics Covered**
+      2. Important Definitions & Terminologies
+      3. Step-by-Step Explanation of Concepts
+      4. Real-World Applications & Examples
+      5. Critical Insights & Takeaways
 
-            *User Query:* ${userQuery}
-        `;
+      User Query: ${userQuery}
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-pro" });
-        const result = await model.generateContent([analysisPrompt]);
-        const response = result.response;
-        const summary = response.text();
+      Dont include "\n" or anything else in response just write one paragraph
+    `;
 
-        const outputFolder = "video_summaries";
-        if (!fs.existsSync(outputFolder)) {
-            fs.mkdirSync(outputFolder);
-        }
-
-        const summaryFile = path.join(
-            outputFolder,
-            `${path.basename(localFilePath, path.extname(localFilePath))}_summary.txt`
-        );
-        fs.writeFileSync(summaryFile, summary, "utf-8");
-
-        console.log(`Summary saved to ${summaryFile}`);
-        fs.unlinkSync(localFilePath);
-
-        return res.json(
-            new ApiResponse(
-                200,
-                { summary },
-                "Video summary generated successfully"
-            )
-        );
+        const result = await model.generateContent(prompt);
+        const summary = result.response.text();
+        return summary;
     } catch (error) {
         console.error("Error processing video:", error);
-        return next(
-            new ApiError(
-                500,
-                error.message,
-                "Failed to analyze video",
-                error.stack
-            )
-        );
+        return null;
+    }
+}
+
+async function fetchQuestions(summary) {
+    try {
+    } catch (error) {
+        console.error("Error processing video:", error);
+        return null;
+    }
+}
+
+const getVideoSummary = asyncHandler(async (req, res) => {
+    const {
+        videoUrl,
+        userQuery = "Summarize the key points of the topic explained in this video.",
+    } = req.body;
+
+    if (!videoUrl || !videoUrl.includes("youtube.com")) {
+        throw new ApiError(400, "A valid YouTube video URL is required.");
+    }
+
+    const summary = await analyzeVideo(videoUrl, userQuery);
+
+    if (summary) {
+        return res.json({
+            message: "Video processed successfully.",
+            summary: summary,
+            questions: {},
+        });
+    } else {
+        throw new ApiError(500, "Failed to generate summary.");
     }
 });
 
-export { getVideoSummary, upload };
+export default getVideoSummary;

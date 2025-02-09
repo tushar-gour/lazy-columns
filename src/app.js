@@ -25,6 +25,6 @@ app.use(express.static("public"));
 
 app.use("/api/v1", healthRouter);
 app.use("/api/v1/langflow", langflowRouter);
-app.use("/api/v1/video-summary", summaryRouter);
+app.use("/api/v1/fetch-details", summaryRouter);
 
 export default app;
