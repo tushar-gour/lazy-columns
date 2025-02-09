@@ -1,5 +1,4 @@
 import dotenv from "dotenv";
-import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { asyncHandler } from "../utils/asyncHandler.js";
