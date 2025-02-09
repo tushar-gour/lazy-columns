@@ -83,7 +83,7 @@ const chatbotHit = asyncHandler(async (req, res) => {
         Adapt to the user's level (beginner, intermediate, advanced).
         Maintain an interactive and engaging tone.
 
-        Only answer questions related to study and here is user query: ${userQuery}
+        Here is user query: ${userQuery}
 
         return the response in text.
         `;
