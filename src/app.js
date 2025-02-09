@@ -6,7 +6,7 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import summaryRouter from "./routers/summary.route.js";
 
-dotenv.config();
+dotenv.config({ path: "../.env" });
 
 const app = express();
 
