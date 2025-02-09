@@ -24,25 +24,25 @@ const chatbotHit = asyncHandler(async (req, res) => {
         prompt = `
             Analyze the given resume and provide a structured evaluation in JSON format. Assess the following parameters and provide percentage scores:
 
-            - **Skills Match**: Evaluate how well the candidate's skills align with the target job description.
-            - **Experience Analysis**: Assess the relevance and depth of work experience.
-            - **Formatting Score**: Check for readability, structure, and professionalism.
-            - **ATS Compatibility**: Determine how well the resume adheres to Applicant Tracking System (ATS) requirements.
-            
-            Additionally, provide improvement suggestions for enhancing the resume. 
-            Ensure the output follows this **JSON structure** (return only valid JSON, no extra text):
+            Skills Match: Evaluate how well the candidate's skills align with the target job description.
+            Experience Analysis: Assess the relevance and depth of work experience.
+            Formatting Score: Check for readability, structure, and professionalism.
+            ATS Compatibility: Determine how well the resume adheres to Applicant Tracking System (ATS) requirements.
+            Additionally, provide improvement suggestions for enhancing the resume. Ensure the output follows this JSON structure:
+            json
+            Copy
+            Edit
             {
-                "skills": "80%",
-                "experience": "80%",
-                "formatting": "80%",
-                "ats": "80%",
-                "improvements": [
-                    "Add quantifiable achievements to strengthen impact",
-                    "Include relevant certifications section"
-                ]
+            "skills": "80%",
+            "experience": "80%",
+            "formatting": "80%",
+            "ats": "80%",
+            "improvements": [
+                "Add quantifiable achievements to strengthen impact",
+                "Include relevant certifications section"
+            ]
             }
-
-            ⚠️ **Important**: Only return valid JSON, no explanations or additional text.
+            Adjust scores and suggestions based on the resume's content:
         `;
 
         requestBody = [
@@ -83,8 +83,8 @@ const chatbotHit = asyncHandler(async (req, res) => {
     const result = await model.generateContent({ contents: requestBody });
     let chatbotResponse = result.response.text().trim();
 
-    // ✅ Extract JSON from mixed responses (if necessary)
-    const jsonMatch = chatbotResponse.match(/\{[\s\S]*\}/); // Find JSON-like content
+    // ✅ Extract JSON from mixed response (if necessary)
+    const jsonMatch = chatbotResponse.match(/\{[\s\S]*\}/); // Extract JSON-like structure
     if (jsonMatch) {
         chatbotResponse = jsonMatch[0];
     }
@@ -96,7 +96,7 @@ const chatbotHit = asyncHandler(async (req, res) => {
         console.error("❌ Invalid JSON response from Gemini:", error);
         chatbotResponse = {
             error: "Gemini returned an unstructured response. Please try again.",
-            rawResponse: chatbotResponse, // Show raw response for debugging
+            rawResponse: chatbotResponse, // Include raw response for debugging
         };
     }
 
