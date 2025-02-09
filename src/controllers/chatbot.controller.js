@@ -23,28 +23,28 @@ const chatbotHit = asyncHandler(async (req, res) => {
         const base64Resume = resumeBuffer.toString("base64");
 
         prompt = `
-            Analyze the given resume and provide a structured evaluation in JSON format. Assess the following parameters and provide percentage scores:
+    Analyze the given resume and provide a structured evaluation in JSON format. Assess the following parameters and provide percentage scores:
 
-            Skills Match: Evaluate how well the candidate's skills align with the target job description.
-            Experience Analysis: Assess the relevance and depth of work experience.
-            Formatting Score: Check for readability, structure, and professionalism.
-            ATS Compatibility: Determine how well the resume adheres to Applicant Tracking System (ATS) requirements.
-            Additionally, provide improvement suggestions for enhancing the resume. Ensure the output follows this JSON structure:
-            json
-            Copy
-            Edit
-            {
-            "skills": "80%",
-            "experience": "80%",
-            "formatting": "80%",
-            "ats": "80%",
-            "improvements": [
-                "Add quantifiable achievements to strengthen impact",
-                "Include relevant certifications section"
-            ]
-            }
-            Adjust scores and suggestions based on the resume's content:
-        `;
+    Skills Match: Evaluate how well the candidate's skills align with the target job description.
+    Experience Analysis: Assess the relevance and depth of work experience.
+    Formatting Score: Check for readability, structure, and professionalism.
+    ATS Compatibility: Determine how well the resume adheres to Applicant Tracking System (ATS) requirements.
+    Additionally, provide improvement suggestions for enhancing the resume.
+    
+    **Ensure the output follows this exact JSON structure without any extra formatting (like markdown or code blocks):**
+    {
+        "skills": "80%",
+        "experience": "80%",
+        "formatting": "80%",
+        "ats": "80%",
+        "improvements": [
+            "Add quantifiable achievements to strengthen impact",
+            "Include relevant certifications section"
+        ]
+    }
+
+    Adjust scores and suggestions based on the resume's content.
+`;
 
         requestBody = [
             { role: "user", parts: [{ text: prompt }] },
@@ -60,8 +60,27 @@ const chatbotHit = asyncHandler(async (req, res) => {
                 ],
             },
         ];
+
         const result = await model.generateContent({ contents: requestBody });
-        response = result.response;
+        let rawResponse = result.response.text().trim();
+
+        // Remove markdown code block if present
+        if (rawResponse.startsWith("```json")) {
+            rawResponse = rawResponse.replace(/```json|```/g, "").trim();
+        }
+
+        // Convert to JSON object
+        let response;
+        try {
+            response = JSON.parse(rawResponse);
+        } catch (error) {
+            console.error("Failed to parse AI response:", error);
+            response = { error: "Invalid response format from AI" };
+        }
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, response, "Resume analysis successful"));
     } else {
         prompt = `
         You are an AI-powered educational assistant for an EdTech platform. Your purpose is to assist students with:
