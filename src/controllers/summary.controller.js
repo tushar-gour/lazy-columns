@@ -70,6 +70,7 @@ async function fetchQuestions(summary) {
         📌 Output Example:
         [
           {
+            "index": 0,
             "question": "What is the main topic of the video?",
             "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
             "answer": "Correct Option"
