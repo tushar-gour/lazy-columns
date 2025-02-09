@@ -10,19 +10,14 @@ dotenv.config();
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-const chatbotHit = asyncHandler(async (req, res) => {
-    const { userQuery = "How can you help me?" } = req.body;
+const analyzeResume = asyncHandler(async (req, res) => {
     const resumeFile = req.file;
-
-    let prompt;
-    let requestBody = [];
-    let response;
 
     if (resumeFile) {
         const resumeBuffer = fs.readFileSync(resumeFile.path);
         const base64Resume = resumeBuffer.toString("base64");
 
-        prompt = `
+        let prompt = `
     Analyze the given resume and provide a structured evaluation in JSON format. Assess the following parameters and provide percentage scores:
 
     Skills Match: Evaluate how well the candidate's skills align with the target job description.
@@ -45,8 +40,7 @@ const chatbotHit = asyncHandler(async (req, res) => {
 
     Adjust scores and suggestions based on the resume's content.
 `;
-
-        requestBody = [
+        let requestBody = [
             { role: "user", parts: [{ text: prompt }] },
             {
                 role: "user",
@@ -81,8 +75,13 @@ const chatbotHit = asyncHandler(async (req, res) => {
         return res
             .status(200)
             .json(new ApiResponse(200, response, "Resume analysis successful"));
-    } else {
-        prompt = `
+    }
+});
+
+const handleEducationQuery = asyncHandler(async (req, res) => {
+    const { userQuery = "How can you help me?" } = req.body;
+
+    let prompt = `
         You are an AI-powered educational assistant for an EdTech platform. Your purpose is to assist students with:
 
         Answering Subject-Related Queries - Provide structured explanations for academic topics.
@@ -105,12 +104,10 @@ const chatbotHit = asyncHandler(async (req, res) => {
         Here is user query: ${userQuery}
 
         return the response in text.
-        `;
-
-        requestBody = [{ role: "user", parts: [{ text: prompt }] }];
-        const result = await model.generateContent({ contents: requestBody });
-        response = result.response.text().trim();
-    }
+    `;
+    let requestBody = [{ role: "user", parts: [{ text: prompt }] }];
+    const result = await model.generateContent({ contents: requestBody });
+    const response = result.response.text().trim();
 
     return res
         .status(200)
@@ -119,4 +116,4 @@ const chatbotHit = asyncHandler(async (req, res) => {
         );
 });
 
-export default chatbotHit;
+export { analyzeResume, handleEducationQuery };
