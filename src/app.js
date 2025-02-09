@@ -23,8 +23,8 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 
-app.use("/api/v1", healthRouter);
-app.use("/api/v1/chatbot", chatbotRouter);
+app.use("/api", healthRouter);
+app.use("/api/v1", chatbotRouter);
 app.use("/api/v1/fetch-details", summaryRouter);
 
 export default app;
