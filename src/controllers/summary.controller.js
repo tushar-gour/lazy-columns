@@ -15,7 +15,20 @@ async function analyzeVideo(videoUrl, userQuery) {
         console.log("Processing video:", videoUrl);
 
         const prompt = ` 
-        Extract detailed insights from the YouTube video at the following URL: ${videoUrl}.
+        You are an AI assistant that generates structured educational summaries. Analyze the YouTube video at this URL: ${videoUrl} and create a student-friendly summary.
+
+        📌 **Summary Requirements:**
+        - Write a well-structured summary in a natural, flowing paragraph.
+        - Do not use bullet points, asterisks, bold text, section headers, or extra line breaks.
+        - Integrate key topics, important concepts, explanations, real-world applications, and takeaways into a coherent response.
+        - Keep the language simple, concise, and engaging.
+        - Tailor the summary based on the user's query: "${userQuery}".
+        - word count minimum: 500
+
+        📌 **Output Format:**
+        - Return a single paragraph with no markdown, symbols, or special formatting.
+        - Ensure smooth transitions between concepts to maintain readability.
+
         Structure the summary for student notes with these key points:
 
         1. Key Topics Covered
@@ -23,8 +36,6 @@ async function analyzeVideo(videoUrl, userQuery) {
         3. Step-by-Step Explanation of Concepts
         4. Real-World Applications & Examples
         5. Critical Insights & Takeaways
-
-        User Query: ${userQuery}
         `;
 
         const result = await model.generateContent(prompt);
