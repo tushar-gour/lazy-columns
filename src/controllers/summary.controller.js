@@ -3,36 +3,38 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import langflowMain from "../services/langflowclient.js";
 
 dotenv.config();
 
 // ✅ Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 async function analyzeVideo(videoUrl, userQuery) {
     try {
         console.log("Processing video:", videoUrl);
 
-        // Ensure correct model initialization
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
         const prompt = ` 
-        Analyze the YouTube video at the following URL: ${videoUrl} and generate a structured, student-friendly summary based on the following key points:
+        You are an AI assistant that generates structured educational summaries. Analyze the YouTube video at this URL: ${videoUrl} and create a student-friendly summary.
 
-        Key Topics Covered - Outline the main subjects discussed.
-        Important Definitions & Terminologies - Highlight essential concepts with clear definitions.
-        Step-by-Step Explanation of Concepts - Break down complex ideas into simple, logical steps.
-        Real-World Applications & Examples - Provide practical use cases to enhance understanding.
-        Critical Insights & Takeaways - Summarize the most valuable lessons from the video.
+        📌 **Summary Requirements:**
+        - Write a well-structured summary in a natural, flowing paragraph.
+        - Do not use bullet points, asterisks, bold text, section headers, or extra line breaks.
+        - Integrate key topics, important concepts, explanations, real-world applications, and takeaways into a coherent response.
+        - Keep the language simple, concise, and engaging.
+        - Tailor the summary based on the user’s query: "${userQuery}".
 
-        Ensure the response is concise, well-structured, and easy to understand for students.
-        Tailor the summary based on the user's query: ${userQuery}.
-        Avoid unnecessary formatting or line breaks—deliver the response as a single, coherent paragraph
-    `;
+        📌 **Output Format:**
+        - Return a single paragraph with no markdown, symbols, or special formatting.
+        - Ensure smooth transitions between concepts to maintain readability.
+        `;
 
         const result = await model.generateContent(prompt);
-        const summary = result.response.text();
+        let summary = result.response.text();
+
+        // Remove all unwanted characters (**, *, \n)
+        summary = summary.replace(/[*_]/g, "").replace(/\n/g, " ").trim();
+
         return summary;
     } catch (error) {
         console.error("Error processing video:", error);
@@ -42,25 +44,44 @@ async function analyzeVideo(videoUrl, userQuery) {
 
 async function fetchQuestions(summary) {
     try {
+        console.log("Fetching Questions");
+
         const prompt = `
-        Based on the following summary text, generate insightful questions that assess comprehension and critical thinking:
+        Generate a diverse set of well-structured multiple-choice questions in JSON format based on the following summary. 
 
-        Summary: ${summary}
+        📌 Summary: ${summary}
 
-        Question Guidelines:
-        Factual Questions - Direct questions based on key points from the summary.
-        Conceptual Understanding - Questions that test deeper comprehension.
-        Application-Based Questions - Scenario-based queries to apply knowledge.
-        Critical Thinking Questions - Thought-provoking questions that encourage analysis.
-        Multiple-Choice & Open-Ended Mix - A variety of question formats for assessment.
+        📌 Question Guidelines:
+        - Each question should be clear and well-structured.
+        - Provide exactly 4 answer options.
+        - Indicate the correct answer in the "answer" field.
+        - Return only a JSON array (without extra text or formatting).
+        - total 10 questions
 
-        Ensure the questions are well-structured, relevant to the summary, and diverse in difficulty level.
-        Output the response as a single, coherent list without unnecessary formatting.
+        📌 Output Example:
+        [
+          {
+            "question": "What is the main topic of the video?",
+            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+            "answer": "Correct Option"
+          },
+          ...
+        ]
         `;
 
-        const fetchedQuestions = await langflowMain(prompt);
+        const result = await model.generateContent(prompt);
+        let questionsText = result.response.text();
 
-        return fetchedQuestions;
+        // Remove any backticks and unnecessary formatting (if present)
+        questionsText = questionsText
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+
+        // Parse the cleaned text into a JSON object
+        const questions = JSON.parse(questionsText);
+
+        return questions;
     } catch (error) {
         throw new ApiError(
             500,
